@@ -8,8 +8,9 @@ from keras.layers import Embedding
 
 class ClassificationWorkspace:
 
-    def __init__(self,config,EMB_DIR):
+    def __init__(self,config,EMB_DIR,path):
         self.EMB_DIR=EMB_DIR
+        self.path=path
         self.train_dataset=None
         self.test_dataset=None
         self.num_words=config["num_words"]

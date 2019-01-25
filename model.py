@@ -59,6 +59,46 @@ def build_network(word_embeddings,  characters, cfg):
         return concatenate(results)
     else: return main_branch
 
+def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
+    mdl=workspace.config["model"]
+
+    words = Input(shape=(workspace.max_words_seq_length,))
+
+    chars = Input(shape=(workspace.max_chars_seq_length,))
+
+    word_embeddings = workspace.create_keras_word_embedings_layer(words)
+    chars_embedding = Embedding(workspace.num_chars, workspace.config["dim_char_embedding"], trainable=False)(chars)
+
+    wordsDropout=mdl["words_dropout"]
+    dropoutSpatial = mdl["words_dropout_kind"]=="spatial"
+
+    if dropoutSpatial:
+        all_emb = SpatialDropout1D(wordsDropout)(word_embeddings)
+    else:
+        all_emb = Dropout(wordsDropout)(word_embeddings)
+
+    inputs={"words":all_emb,"chars":chars_embedding}
+    branches=[create_branch(branch,mdl["branches"][branch], inputs) for branch in mdl["branches"]]
+    if len(branches)>1:
+        main=concatenate(branches)
+    else:
+        main=branches[0]
+    out = Dense(1, activation="sigmoid")(main)
+    m = keras.models.Model([words, chars], out)
+    m.compile(loss=workspace.config["loss"], optimizer=workspace.config["optimizer"], metrics=workspace.config["metrics"])
+    return m
+
+
+import blocks
+import copy
+def create_branch(branch,cfg,inputs):
+    cfg=copy.copy(cfg)
+    func=getattr(blocks,cfg["type"])
+    input=inputs[cfg["input"]]
+    del cfg["input"]
+    del cfg["type"]
+    return func(input,**cfg)
+
 
 def create_model(cfg,workspace:workspace.ClassificationWorkspace):
     words = Input(shape=(workspace.max_words_seq_length,))

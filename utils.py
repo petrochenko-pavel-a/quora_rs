@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 import yaml
+import os
 from sklearn.metrics import f1_score
 
 def load(s):
@@ -30,7 +31,11 @@ def eval_treshold_and_score(pred_val_y_1, y_val):
 
     thresholds.sort(key=lambda x: x[1], reverse=True)
     return thresholds[0]
-
+def ensure_exists(directory):
+    try:
+        os.makedirs(directory);
+    except:
+        pass
 def encode(bin_str, sbase):
     n = int(bin_str,2)
     code = []
