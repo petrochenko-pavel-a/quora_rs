@@ -31,6 +31,12 @@ def eval_treshold_and_score(pred_val_y_1, y_val):
 
     thresholds.sort(key=lambda x: x[1], reverse=True)
     return thresholds[0]
+
+def eval_f1_score(pred_val_y_1, y_val,thresh):
+    res = f1_score(y_val, (pred_val_y_1 > thresh).astype(int))
+    return res
+
+
 def ensure_exists(directory):
     try:
         os.makedirs(directory);

@@ -93,4 +93,4 @@ class WordEmbeddings:
             self.emb,missed = load_binary(wn.wn, len(wn.wn), EMBEDDING_FILE)
         save(name,self.emb)
         with open(name+".missed_embeddings.words","w",encoding="utf8") as f:
-            f.writelines([x+"\r" for x in missed])
+            f.writelines([x+"\r\n" for x in missed])

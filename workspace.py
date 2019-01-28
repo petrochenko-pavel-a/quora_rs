@@ -4,7 +4,7 @@ from keras.preprocessing import sequence
 from custom_vect import *
 from datasets import *
 from  utils import *
-from keras.layers import Embedding
+from keras.layers import Embedding,concatenate
 
 class ClassificationWorkspace:
 
@@ -26,6 +26,7 @@ class ClassificationWorkspace:
         self.fold_count=config["folds"]
         self.folds=None
         self.config=config
+        self.ew=None
         self.holdout_split=None
 
 
@@ -68,9 +69,15 @@ class ClassificationWorkspace:
             writeText("fold_indexes_val" + str(i) + ".txt", self.folds.indexes[i][1])
 
     def create_keras_word_embedings_layer(self, words_input):
-        return Embedding(self.num_words, 1350,
-                                    weights=[np.concatenate(self.computedEmbeddings, axis=1)],
-                                    trainable=False)(words_input)
+        if self.ew is not None:
+            weights=self.ew
+        else:
+            weights = [np.concatenate(self.computedEmbeddings, axis=1)]
+            self.ew=weights
+        emb = Embedding(self.num_words, weights[0].shape[1], weights=weights, trainable=False)(words_input)
+        if "dim_num_embedding" in self.config:
+            emb=concatenate([emb,Embedding(self.num_words,self.config["dim_num_embedding"],trainable=False)(words_input)])
+        return emb
 
     def get_data(self,foldNum):
         train = self.folds.indexes[foldNum][0]
