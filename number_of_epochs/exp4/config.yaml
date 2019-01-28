@@ -66,5 +66,5 @@ model:
 optimizer: adam
 metrics: ['accuracy']
 loss: binary_crossentropy
-epochs: 30
+epochs: 6
 batch: 1024

@@ -1,12 +1,13 @@
 from model import *
 from workspace import *
-from keras.layers import *
+
 from utils import *
-import keras
+
 import pandas as pd
 import os
 import yaml
 import argparse
+
 
 
 def load_config(path,prepocessing_path,DIR):
@@ -133,6 +134,8 @@ def generate_submition(model, workspace:ClassificationWorkspace, treshold):
     with open("encoded.txt","w",encoding="utf8") as f:
         f.write(pred_compress_copy)
 
+from keras.layers import *
+import keras
 def main():
     parser = argparse.ArgumentParser(description='Train quora')
     parser.add_argument('--data', type=str, default=".",
@@ -144,16 +147,27 @@ def main():
     parser.add_argument('--gpu', type=int, default=0,
                         help='path to quora')
     args = parser.parse_args()
+
+
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     args.gpu=0
+
     #
-    evalModel(load_config("D:/quora/experiments\exp54/config.yaml", args.data,args.quora+"/"),args.gpu)
-    exit(0)
-    for i in range(1,3):
-        for j in range(15):
-            try:
-                evalModel(load_config("D:/quora/word_eval"+str(i)+"/exp"+str(j)+"/config.yaml", args.data,args.quora+"/"),args.gpu)
-            except:
-                pass
+    if os.path.isdir(args.input):
+        for v in os.listdir(args.input):
+            ps=args.input + "/" + v + "/config.yaml";
+            if os.path.exists(ps):
+                evalModel(load_config(ps, args.data, args.quora + "/"), args.gpu)
+        exit(0)
+    evalModel(load_config(args.input, args.data,args.quora+"/"),args.gpu)
+    # exit(0)
+    # for i in range(1,3):
+    #     for j in range(15):
+    #         try:
+    #             evalModel(load_config("D:/quora/word_eval"+str(i)+"/exp"+str(j)+"/config.yaml", args.data,args.quora+"/"),args.gpu)
+    #         except:
+    #             pass
     pass
 if __name__ == '__main__':
     main()
