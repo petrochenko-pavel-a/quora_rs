@@ -3,7 +3,7 @@ num_words: 200000
 num_chars: 200
 
 #char and word max sequence meta
-max_words_seq: 40
+max_words_seq: 50
 max_chars_seq: 150
 
 
@@ -29,7 +29,7 @@ folds_seed: 33
 stratify_folds: true
 
 model:
-  words_dropout: 0.2
+  words_dropout: 0.3
   words_dropout_kind: spatial
   branches:
 
@@ -66,5 +66,5 @@ model:
 optimizer: adam
 metrics: ['accuracy']
 loss: binary_crossentropy
-epochs: 3
+epochs: 6
 batch: 1024

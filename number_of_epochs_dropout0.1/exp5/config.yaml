@@ -2,7 +2,7 @@
 num_words: 200000
 num_chars: 200
 
-#char and word max sequence lengths
+#char and word max sequence meta
 max_words_seq: 40
 max_chars_seq: 150
 

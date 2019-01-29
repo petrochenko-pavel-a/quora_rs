@@ -3,7 +3,7 @@ num_words: 200000
 num_chars: 200
 
 #char and word max sequence meta
-max_words_seq: 40
+max_words_seq: 50
 max_chars_seq: 150
 
 
@@ -13,10 +13,10 @@ embeddings:
   - wiki-news-300d-1M.vec
   - paragram_300_sl999.txt
   - GoogleNews-vectors-negative300.bin
-  - name: custom.vect
-    size: 150
-    window: 4
-    min_count: 2
+#  - name: custom.vect
+#    size: 150
+#    window: 4
+#    min_count: 2
 
 #dimension of character embedding
 dim_char_embedding: 100
@@ -31,6 +31,7 @@ stratify_folds: true
 model:
   words_dropout: 0.2
   words_dropout_kind: spatial
+  has_len: true
   branches:
 
      gf:
@@ -42,12 +43,13 @@ model:
 
 #     cnn:
 #        type: cnn
-#        input: chars
-#        channels: [100,100,100,100,100]
-#        pooling: [2,2,2,2,2]
-#        windows: [2,2,2,2,2]
-#        dropout: 0.3
-#        output_channels: 16
+#        input: words
+#        channels: [100,50,20]
+#        pooling: [1,2,2]
+#        windows: [1,2,2]
+#        dropout: 0.0
+#        mode: dense
+#        output_channels: 10
 #     lstm:
 #       type: lstm
 #       input: chars
@@ -58,13 +60,13 @@ model:
      gru:
         type: residual_gru_with_attention
         input: words
-        channels: 120
-        last_layer_channels: 60
-        output_channels: 40
-        dropout: 0.2
+        channels: 100
+        last_layer_channels: 50
+        output_channels: 30
+        dropout: 0.0
 
 optimizer: adam
 metrics: ['accuracy']
 loss: binary_crossentropy
-epochs: 3
+epochs: 5
 batch: 1024
