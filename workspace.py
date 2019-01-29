@@ -84,7 +84,7 @@ class ClassificationWorkspace:
         else:
             weights = [np.concatenate(self.computedEmbeddings, axis=1)]
             self.ew=weights
-        emb = Embedding(self.num_words, weights[0].shape[1], weights=weights, trainable=False)(words_input)
+        emb = Embedding(weights[0].shape[0], weights[0].shape[1], weights=weights, trainable=False)(words_input)
         if "dim_num_embedding" in self.config:
             emb=concatenate([emb,Embedding(self.num_words,self.config["dim_num_embedding"],trainable=False)(words_input)])
         return emb
