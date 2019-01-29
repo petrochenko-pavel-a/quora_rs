@@ -27,6 +27,7 @@ class ClassificationWorkspace:
         self.folds=None
         self.config=config
         self.ew=None
+        self.meta=None
         self.holdout_split=None
 
 
@@ -57,10 +58,19 @@ class ClassificationWorkspace:
 
         self.train_words = sequence.pad_sequences(wn.wi, self.max_words_seq_length)
         self.train_chars = sequence.pad_sequences(train_chars.tokens, self.max_chars_seq_length)
-        self.test_words = sequence.pad_sequences(wnt.wi, self.max_chars_seq_length)
+        self.test_words = sequence.pad_sequences(wnt.wi, self.max_words_seq_length)
         self.test_chars = sequence.pad_sequences(test_chars.tokens, self.max_chars_seq_length)
+        self.meta=np.array([[len(x) / 100] for x in wn.wi])
 
         self.holdout_split = holdout(train_dataset, self.config["holdout"],self.config["holdout_seed"])
+
+        ts=[]
+        ts1=[]
+
+        mn0 = np.zeros((100))
+        mn1 = np.zeros((100))
+
+
         writeText("holdout_indexes.txt",self.holdout_split[1])
         self.folds = KFoldDataSet(train_dataset, self.holdout_split[0], self.config["folds"], self.config["folds_seed"], self.config["stratify_folds"])
         self.folds.indexes=[ (np.array(self.holdout_split[0])[x[0]],np.array(self.holdout_split[0])[x[1]]) for x in self.folds.indexes]
@@ -84,10 +94,11 @@ class ClassificationWorkspace:
         val = self.folds.indexes[foldNum][1]
         train_ = self.train_words[train]
         train_chars_ = self.train_chars[train]
-        train_ = [train_, train_chars_]
+        train_len=self.meta[train]
+        train_ = [train_, train_chars_,train_len]
         pred_train = self.train_dataset.predictions()[train]
         pred_val = self.train_dataset.predictions()[val]
-        val_ = [self.train_words[val], self.train_chars[val]]
+        val_ = [self.train_words[val], self.train_chars[val], self.meta[val]]
         return pred_train, pred_val, train_, val_
 
     def get_test(self):
@@ -98,7 +109,7 @@ class ClassificationWorkspace:
 
         words = self.train_words[indexes]
         chars = self.train_chars[indexes]
-        combined = [words, chars]
+        combined = [words, chars, self.meta[indexes]]
         predictions = self.train_dataset.predictions()[indexes]
 
         return predictions, combined

@@ -66,6 +66,8 @@ def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
 
     chars = Input(shape=(workspace.max_chars_seq_length,))
 
+    len_input = Input(shape=(1,))
+
     word_embeddings = workspace.create_keras_word_embedings_layer(words)
     chars_embedding = Embedding(workspace.num_chars, workspace.config["dim_char_embedding"], trainable=False)(chars)
 
@@ -79,12 +81,14 @@ def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
 
     inputs={"words":all_emb,"chars":chars_embedding}
     branches=[create_branch(branch,mdl["branches"][branch], inputs) for branch in mdl["branches"]]
+    if "has_len" in mdl and mdl["has_len"]:
+        branches.append(len_input)
     if len(branches)>1:
         main=concatenate(branches)
     else:
         main=branches[0]
     out = Dense(1, activation="sigmoid")(main)
-    m = keras.models.Model([words, chars], out)
+    m = keras.models.Model([words, chars,len_input], out)
     m.compile(loss=workspace.config["loss"], optimizer=workspace.config["optimizer"], metrics=workspace.config["metrics"])
     return m
 
