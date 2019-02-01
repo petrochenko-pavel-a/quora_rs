@@ -29,7 +29,7 @@ folds_seed: 33
 stratify_folds: true
 
 model:
-  words_dropout: 0.3
+  words_dropout: 0.0
   words_dropout_kind: spatial
   branches:
 
@@ -42,10 +42,10 @@ model:
      gru:
         type: residual_gru_with_attention
         input: words
-        channels: 120
-        last_layer_channels: 60
-        output_channels: 40
-        dropout: 0.2
+        channels: 30
+        last_layer_channels: 20
+        output_channels: 20
+        dropout: 0.0
 
 optimizer: adam
 metrics: ['accuracy']

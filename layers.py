@@ -1,5 +1,4 @@
 from keras.layers import *
-from keras.models import *
 
 
 def attention_3d_block(inputs):
@@ -18,11 +17,6 @@ def attention_3d_block(inputs):
     output_attention_mul = Multiply()([inputs, a_probs])
     return output_attention_mul
 
-import keras
-import keras.backend as K
-import tensorflow as tf
-import keras
-import keras.backend as K
 import tensorflow as tf
 
 import keras

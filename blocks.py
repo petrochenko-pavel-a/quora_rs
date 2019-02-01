@@ -82,13 +82,58 @@ def convLstm(input,dropout,output_channels,channels=(100,100)):
     #result = Dense(output_channels, activation="relu")(x)
     return m
 
-def residual_gru_with_attention(input,channels,last_layer_channels, dropout, output_channels ):
-    m = Bidirectional(CuDNNGRU(channels, return_sequences=True))(input)
+class CropWindow(Wrapper):
+
+    def __init__(self,count,layer,**kwargs):
+        self.count=count
+        super(CropWindow, self).__init__(layer, **kwargs)
+        self.return_sequences=True
+        self.return_state=False
+
+    def compute_output_shape(self, input_shape):
+        print(input_shape)
+        output_shape = self.layer.compute_output_shape((None,20,input_shape[2]))
+        print("Out:")
+        print(output_shape)
+        return output_shape
+
+    def build(self, input_shape=None):
+
+        self.layer.build((input_shape[0],20,input_shape[2]))
+        self.built = True
+
+    def call(self, inputs, **kwargs):
+        print(inputs)
+        fi=[inputs[0][0:self.count,:]]
+        return self.layer.call([fi,inputs[1]],**kwargs)
+
+    def get_config(self):
+        return self.layer.get_config()
+
+    @classmethod
+    def from_config(cls, config, custom_objects=None):
+        from keras.layers import deserialize as deserialize_layer
+        rnn_layer = CuDNNGRU(**config)
+        num_constants = config.pop('num_constants', None)
+        layer = cls(20,rnn_layer)
+        layer._num_constants = num_constants
+        return layer
+
+
+def residual_gru_with_attention(input,channels,last_layer_channels, dropout, output_channels,mode="atention"):
+    m = CuDNNGRU(channels, return_sequences=True)(input)
     m = layers.attention_3d_block(m)
-    m1 = Bidirectional(CuDNNGRU(channels, return_sequences=True))(m)
-    m =  add([m, m1])
-    m = Bidirectional(CuDNNGRU(last_layer_channels, return_sequences=True))(m)
-    m = layers.AttLayer()(m)
+    # m1 = CuDNNGRU(channels, return_sequences=True)(m)
+    # m =  add([m, m1])
+    m = CuDNNGRU(last_layer_channels, return_sequences=False)(m)
+
+    # if mode=="atention":
+    #     m = layers.AttLayer()(m)
+    # else:
+    #     if mode =="max":
+    #         m=layers.MaxPool1D(m)
+    #     else: m=layers.AveragePooling1D(m)
+
     m = Dropout(dropout)(m)
     m = Dense(output_channels, activation="relu")(m)
     return m

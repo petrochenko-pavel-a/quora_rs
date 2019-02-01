@@ -48,9 +48,12 @@ def load_text(words, max_features, EMBEDDING_FILE, e=False):
 
     word_index = words
     nb_words = min(max_features, len(word_index))
-    embedding_matrix = np.random.normal(emb_mean, emb_std, (nb_words, embed_size))
+
     numErrors=0
     missedWords=[]
+
+
+    embedding_matrix = np.random.normal(emb_mean, emb_std, (nb_words, embed_size))
     for word, i in tqdm(word_index.items()):
         if i >= max_features: continue
         embedding_vector = embeddings_index.get(word)

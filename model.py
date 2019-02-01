@@ -59,27 +59,41 @@ def build_network(word_embeddings,  characters, cfg):
         return concatenate(results)
     else: return main_branch
 
+def cast_l(x):
+    return K.cast_to_floatx(x)
+
+def cast_shape(input_shape):
+
+        return input_shape
+
 def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
     mdl=workspace.config["model"]
 
     words = Input(shape=(workspace.max_words_seq_length,))
 
-    chars = Input(shape=(workspace.max_chars_seq_length,))
+    chars = Input(shape=(workspace.max_words_seq_length,))
 
     len_input = Input(shape=(1,))
 
-    word_embeddings = workspace.create_keras_word_embedings_layer(words)
-    chars_embedding = Embedding(workspace.num_chars, workspace.config["dim_char_embedding"], trainable=False)(chars)
+    word_embeddings = workspace.create_keras_word_embedings_layer()
+    #chars_embedding = Embedding(workspace.num_chars, workspace.config["dim_char_embedding"], trainable=False)(chars)
 
     wordsDropout=mdl["words_dropout"]
     dropoutSpatial = mdl["words_dropout_kind"]=="spatial"
+    w1=word_embeddings(words)
+    w2 = word_embeddings(chars)
 
+    #w1=Lambda(cast_l,cast_shape)(w1)
+    #w2 = Lambda(cast_l, cast_shape)(w2)
     if dropoutSpatial:
-        all_emb = SpatialDropout1D(wordsDropout)(word_embeddings)
+        w1 = SpatialDropout1D(wordsDropout)(w1)
+        w2 = SpatialDropout1D(wordsDropout)(w2)
     else:
-        all_emb = Dropout(wordsDropout)(word_embeddings)
+        w1 = Dropout(wordsDropout)(w1)
+        w2 = Dropout(wordsDropout)(w2)
 
-    inputs={"words":all_emb,"chars":chars_embedding}
+
+    inputs={"words":w1,"chars":w2}
     branches=[create_branch(branch,mdl["branches"][branch], inputs) for branch in mdl["branches"]]
     if "has_len" in mdl and mdl["has_len"]:
         branches.append(len_input)
@@ -106,9 +120,10 @@ def create_branch(branch,cfg,inputs):
 
 def create_model(cfg,workspace:workspace.ClassificationWorkspace):
     words = Input(shape=(workspace.max_words_seq_length,))
-    chars = Input(shape=(workspace.max_chars_seq_length,))
-    word_embeddings  = workspace.create_keras_word_embedings_layer(words)
-    chars_embedding = Embedding(workspace.num_chars, 50, trainable=False)(chars)
+    chars = Input(shape=(workspace.max_words_seq_length,))
+    e=workspace.create_keras_word_embedings_layer()
+    word_embeddings  =e (words)
+    chars_embedding = e (chars)
     out = Dense(1, activation="sigmoid")(build_network(word_embeddings,  chars_embedding, cfg))
     m = keras.models.Model([words,chars], out)
     m.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])

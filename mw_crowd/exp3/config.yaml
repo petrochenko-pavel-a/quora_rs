@@ -32,13 +32,6 @@ model:
   words_dropout: 0.3
   words_dropout_kind: spatial
   branches:
-
-     gf:
-        type: global_features_network
-        input: words
-        dropout: 0.0
-        output_channels: 64
-        mode: both
      gru:
         type: residual_gru_with_attention
         input: words

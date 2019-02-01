@@ -46,6 +46,7 @@ model:
         last_layer_channels: 60
         output_channels: 40
         dropout: 0.2
+        mode: average
 
 optimizer: adam
 metrics: ['accuracy']

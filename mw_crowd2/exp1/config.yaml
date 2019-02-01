@@ -1,9 +1,9 @@
 #char and word vocabularies
-num_words: 300000
+num_words: 150000
 num_chars: 200
 
 #char and word max sequence meta
-max_words_seq: 50
+max_words_seq: 40
 max_chars_seq: 150
 
 
@@ -29,26 +29,33 @@ folds_seed: 33
 stratify_folds: true
 
 model:
-  words_dropout: 0.3
+  words_dropout: 0.2
   words_dropout_kind: spatial
   branches:
 
-     gf:
-        type: global_features_network
-        input: words
-        dropout: 0.0
-        output_channels: 64
-        mode: both
+#     gf:
+#        type: global_features_network
+#        input: words
+#        dropout: 0.0
+#        output_channels: 64
+#        mode: both
      gru:
         type: residual_gru_with_attention
         input: words
-        channels: 120
-        last_layer_channels: 60
-        output_channels: 40
-        dropout: 0.2
+        channels: 100
+        last_layer_channels: 50
+        output_channels: 50
+        dropout: 0.1
+     gru1:
+       type: residual_gru_with_attention
+       input: chars
+       channels: 100
+       last_layer_channels: 50
+       output_channels: 50
+       dropout: 0.1
 
 optimizer: adam
 metrics: ['accuracy']
 loss: binary_crossentropy
-epochs: 6
+epochs: 5
 batch: 1024

@@ -12,7 +12,7 @@ embeddings:
   - glove.840B.300d.txt
   - wiki-news-300d-1M.vec
   - paragram_300_sl999.txt
-  - GoogleNews-vectors-negative300.bin
+  #- GoogleNews-vectors-negative300.bin
   - name: custom.vect
     size: 150
     window: 4
@@ -32,20 +32,14 @@ model:
   words_dropout: 0.3
   words_dropout_kind: spatial
   branches:
-
-     gf:
-        type: global_features_network
-        input: words
-        dropout: 0.0
-        output_channels: 64
-        mode: both
      gru:
         type: residual_gru_with_attention
         input: words
-        channels: 120
-        last_layer_channels: 60
-        output_channels: 40
-        dropout: 0.2
+        channels: 50
+        mode: average
+        last_layer_channels: 50
+        output_channels: 20
+        dropout: 0.0
 
 optimizer: adam
 metrics: ['accuracy']

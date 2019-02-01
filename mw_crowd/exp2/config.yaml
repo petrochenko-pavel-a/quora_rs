@@ -30,7 +30,7 @@ stratify_folds: true
 
 model:
   words_dropout: 0.3
-  words_dropout_kind: spatial
+  words_dropout_kind: dropout
   branches:
 
      gf:

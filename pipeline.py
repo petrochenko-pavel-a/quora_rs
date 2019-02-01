@@ -7,6 +7,7 @@ import pandas as pd
 import os
 import yaml
 import argparse
+import gc
 
 
 
@@ -22,6 +23,24 @@ def load_config(path,prepocessing_path,DIR):
     os.chdir(cd)
     return workspace
 
+
+class RecordOnTest(keras.callbacks.Callback):
+
+    def __init__(self,model,datas):
+        self.model=model
+        self.datas=datas
+        self.all=[]
+
+    def on_epoch_end(self, epoch, logs=None):
+        preds=[]
+        for d in self.datas:
+            preds.append(self.model.predict(d, batch_size=1024))
+        self.all.append(preds)
+        pass
+
+from keras.backend.common import set_floatx
+
+#set_floatx('float16')
 def evalModel(workspace:ClassificationWorkspace,gpu):
     best_tresholds = []
     best_scores = []
@@ -35,6 +54,8 @@ def evalModel(workspace:ClassificationWorkspace,gpu):
     holdout_best=[]
     holdout_blend=[]
     pred_holdout,holdout_data=workspace.get_holdout()
+
+    holdOutPredictions=[]
     for foldNum in range(workspace.fold_count):
         with K.tf.device('/gpu:'+str(gpu)):
             K.set_session(K.tf.Session())
@@ -42,80 +63,110 @@ def evalModel(workspace:ClassificationWorkspace,gpu):
 
             pred_train, pred_val, train_, val_ = workspace.get_data(foldNum)
             weights_path = weights_folder + "/fold_best_" + str(foldNum) + ".weights"
-            checkpoint=keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True,
-                                                       monitor="val_acc", mode="max", save_weights_only=True)
+            rs=RecordOnTest(m,[val_,holdout_data]);
+
             m.fit(train_, pred_train, workspace.config["batch"], workspace.config["epochs"], validation_data=(val_,pred_val), shuffle=True,
-                  callbacks=[checkpoint], verbose=1)
-            m.save_weights(weights_folder+"/fold_last_" + str(foldNum)+".weights")
-            pred_last = m.predict(val_,batch_size=workspace.config["batch"])
+                  callbacks=[rs], verbose=2)
+            #m.save_weights(weights_folder+"/fold_last_" + str(foldNum)+".weights")
+            #pred_last = m.predict(val_,batch_size=workspace.config["batch"])
 
-            holdout_last_pred = m.predict(holdout_data, batch_size=workspace.config["batch"])
-            m.load_weights(weights_path)
+            #mz=keras.Model(m.inputs,m.layers[-2].output)
+            #foldLastPredictions=mz.predict(holdout_data,batch_size=workspace.config["batch"])
+            #holdOutPredictions.append(foldLastPredictions)
 
-            pred_best = m.predict(val_,batch_size=workspace.config["batch"])
-
-
-            treshold_best=eval_treshold_and_score(pred_best, pred_val)
-            treshold_snaphot = eval_treshold_and_score((pred_best+pred_last) / 2, pred_val)
-            treshold1_last = eval_treshold_and_score(pred_last, pred_val)
-
-            best_tresholds.append(treshold_best[0])
-            best_scores.append(treshold_best[1])
-
-            combined_tresh.append(treshold_snaphot[0])
-            combined_scores.append(treshold_snaphot[1])
-
-            holdout_pred=m.predict(holdout_data,batch_size=workspace.config["batch"])
-            treshold_h = eval_treshold_and_score(holdout_pred, pred_holdout)
-
-            os.remove(weights_path)
-            os.remove(weights_folder+"/fold_last_" + str(foldNum)+".weights")
+            #holdout_last_pred = m.predict(holdout_data, batch_size=workspace.config["batch"])
+            #m.load_weights(weights_path)
 
 
-            print("Fold:",foldNum,treshold_best[0],treshold_best[1]," blending last and best:",treshold_snaphot[0],treshold_snaphot[1]," Last:",treshold1_last[0],treshold1_last[1],"Holdout:",treshold_h[0],treshold_h[1])
+            # pred_best = m.predict(val_,batch_size=workspace.config["batch"])
+            #
+            # mz = keras.Model(m.inputs, m.layers[-2].output)
+            # foldBestPredictions = mz.predict(holdout_data, batch_size=workspace.config["batch"])
+            # holdOutPredictions.append(foldBestPredictions)
+            #
 
-            metrics={
-                "fold": int(foldNum),
-                "treshold_best":float(treshold_best[0]),
-                "score_best":float(treshold_best[1]),
-                "treshold_snaphot":float(treshold_snaphot[0]),
-                "score_snaphot": float(treshold_snaphot[1]),
-                "treshold_last": float(treshold1_last[0]),
-                "score_last": float(treshold1_last[1]),
-                "treshold_holdout": float(treshold_h[0]),
-                "score_holdout": float(treshold_h[1]),
-            }
-            with open(dir+"/metrics"+str(foldNum)+".yaml","w",encoding="utf8") as f:
-                yaml.dump(metrics,f,default_flow_style=False)
+            allPreds = [r[0] for r in rs.all]
 
-            holdout_best.append(holdout_pred)
-            holdout_blend.append(holdout_pred)
-            holdout_blend.append(holdout_last_pred)
+            for j in range(2):
+                allVal = [r[j] for r in rs.all]
+                prs=[allVal[2],allVal[4],allVal[3],(allVal[2]+allVal[3])/2, (allVal[1]+allVal[2]+allVal[3])/3,(allVal[1]+allVal[2]+allVal[3]+allVal[4])/4]
+                p=pred_val
+                if j==1:
+                    p=pred_holdout
+                for i in prs:
+                    treshold_best=eval_treshold_and_score(i, p)
+                    print(j,treshold_best)
+            hf=(allVal[1]+allVal[2]+allVal[3]+allVal[4])/4
+            holdout_blend.append(hf)
+            # treshold_snaphot = eval_treshold_and_score((pred_best+pred_last) / 2, pred_val)
+            # treshold1_last = eval_treshold_and_score(pred_last, pred_val)
+            #
+            # best_tresholds.append(treshold_best[0])
+            # best_scores.append(treshold_best[1])
+            #
+            # combined_tresh.append(treshold_snaphot[0])
+            # combined_scores.append(treshold_snaphot[1])
+            #
+            # holdout_pred=m.predict(holdout_data,batch_size=workspace.config["batch"])
+            # treshold_h = eval_treshold_and_score(holdout_pred, pred_holdout)
+            #
+            # os.remove(weights_path)
+            # os.remove(weights_folder+"/fold_last_" + str(foldNum)+".weights")
+
+
+            #print("Fold:",foldNum,treshold_best[0],treshold_best[1]," blending last and best:",treshold_snaphot[0],treshold_snaphot[1]," Last:",treshold1_last[0],treshold1_last[1],"Holdout:",treshold_h[0],treshold_h[1])
+
+            # metrics={
+            #     "fold": int(foldNum),
+            #     "treshold_best":float(treshold_best[0]),
+            #     "score_best":float(treshold_best[1]),
+            #     "treshold_snaphot":float(treshold_snaphot[0]),
+            #     "score_snaphot": float(treshold_snaphot[1]),
+            #     "treshold_last": float(treshold1_last[0]),
+            #     "score_last": float(treshold1_last[1]),
+            #     "treshold_holdout": float(treshold_h[0]),
+            #     "score_holdout": float(treshold_h[1]),
+            # }
+            # with open(dir+"/metrics"+str(foldNum)+".yaml","w",encoding="utf8") as f:
+            #     yaml.dump(metrics,f,default_flow_style=False)
+
+            # holdout_best.append(holdout_pred)
+            # holdout_blend.append(holdout_pred)
+            #holdout_blend.append(holdout_last_pred)
             K.clear_session()
 
-    average_preds=np.array(holdout_best).mean(axis=0)
+
+
+
+
+    # st=eval_treshold_and_score(stackPred, pred_holdout[f.indexes[0][1]])
+    # print(st)
+
+
+    #average_preds=np.array(holdout_best).mean(axis=0)
     blend_preds = np.array(holdout_blend).mean(axis=0)
-    holdout_tresh = eval_treshold_and_score(average_preds, pred_holdout)
-    holdout_tresh_blend = eval_treshold_and_score(blend_preds, pred_holdout)
-    blendAver=eval_f1_score(blend_preds,pred_holdout,np.mean(np.array(combined_tresh))*0.93)
-    print("Evaluating all folds blend:",holdout_tresh[0],holdout_tresh[1],holdout_tresh_blend[0],holdout_tresh_blend[1],"Av Blend:",blendAver)
+    #holdout_tresh = eval_treshold_and_score(average_preds, pred_holdout)
+    #holdout_tresh_blend = eval_treshold_and_score(blend_preds, pred_holdout)
+    blendAver=eval_treshold_and_score(blend_preds, pred_holdout)
+    print(blendAver)
+    #print("Evaluating all folds blend:",holdout_tresh[0],holdout_tresh[1],holdout_tresh_blend[0],holdout_tresh_blend[1],"Av Blend:",blendAver)
 
     metrics = {
-        "holdout_blend_treshold": float(holdout_tresh[0]),
-        "holdout_blend_score": float(holdout_tresh[1]),
+         "holdout_blend_treshold": float(blendAver[0]),
+         "holdout_blend_score": float(blendAver[1]),
 
-        "best_treshold_average": float(np.mean(np.array(best_tresholds))),
-        "best_score_average": float(np.mean(np.array(best_scores))),
-        "snapshot_treshold_average": float(np.mean(np.array(combined_tresh))),
-        "snapshot_score_average": float(np.mean(np.array(combined_scores))),
+         #"best_treshold_average": float(np.mean(np.array(best_tresholds))),
+         #"best_score_average": float(np.mean(np.array(best_scores))),
+         #"snapshot_treshold_average": float(np.mean(np.array(combined_tresh))),
+         #"snapshot_score_average": float(np.mean(np.array(combined_scores))),
 
-        "holdout_super_blend_treshold": float(holdout_tresh_blend[0]),
-        "holdout_super_blend_score": float(holdout_tresh_blend[1]),
-        "Blend with averaged tresh:": float(blendAver),
-    }
+         #"holdout_super_blend_treshold": float(holdout_tresh_blend[0]),
+         #"holdout_super_blend_score": float(holdout_tresh_blend[1]),
+         #"Blend with averaged tresh:": float(blendAver),
+     }
     with open(dir+"/metrics_final" + ".yaml", "w", encoding="utf8") as f:
-        yaml.dump(metrics, f,default_flow_style=False)
-    return np.mean(np.array(best_tresholds)),np.mean(np.array(best_scores)),np.mean(np.array(combined_tresh)),np.mean(np.array(combined_scores)),holdout_tresh[0],holdout_tresh[1]
+         yaml.dump(metrics, f,default_flow_style=False)
+    return blendAver
 
 
 def generate_submition(model, workspace:ClassificationWorkspace, treshold):

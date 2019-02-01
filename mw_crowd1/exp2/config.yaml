@@ -42,10 +42,10 @@ model:
      gru:
         type: residual_gru_with_attention
         input: words
-        channels: 120
-        last_layer_channels: 60
-        output_channels: 40
-        dropout: 0.2
+        channels: 80
+        last_layer_channels: 40
+        output_channels: 20
+        dropout: 0.1
 
 optimizer: adam
 metrics: ['accuracy']

@@ -4,7 +4,7 @@ from keras.preprocessing import sequence
 from custom_vect import *
 from datasets import *
 from  utils import *
-from keras.layers import Embedding,concatenate
+from keras.layers import Embedding,concatenate,Lambda
 
 class ClassificationWorkspace:
 
@@ -40,7 +40,7 @@ class ClassificationWorkspace:
         test_chars = TokenizeChars(test_dataset, "test",num_chars=self.num_chars)
 
         vocab = Vocabulary([train_words, test_words])
-
+        print("Voc:"+str(len(vocab.items())))
         wn = WordNumber(train_words, vocab, "train_words", self.num_words)
         self.wn=wn
         wnt = WordNumber(test_words, vocab, "test_words", self.num_words)
@@ -57,8 +57,10 @@ class ClassificationWorkspace:
                 self.computedEmbeddings.append(e.emb)
 
         self.train_words = sequence.pad_sequences(wn.wi, self.max_words_seq_length)
+        self.train_words1=sequence.pad_sequences([list(reversed(x)) for x in wn.wi], self.max_words_seq_length)
         self.train_chars = sequence.pad_sequences(train_chars.tokens, self.max_chars_seq_length)
         self.test_words = sequence.pad_sequences(wnt.wi, self.max_words_seq_length)
+        self.test_words1 = sequence.pad_sequences([list(reversed(x)) for x in wnt.wi], self.max_words_seq_length)
         self.test_chars = sequence.pad_sequences(test_chars.tokens, self.max_chars_seq_length)
         self.meta=np.array([[len(x) / 100] for x in wn.wi])
 
@@ -78,37 +80,39 @@ class ClassificationWorkspace:
             writeText("fold_indexes_train" + str(i) +".txt", self.folds.indexes[i][0])
             writeText("fold_indexes_val" + str(i) + ".txt", self.folds.indexes[i][1])
 
-    def create_keras_word_embedings_layer(self, words_input):
+    def create_keras_word_embedings_layer(self):
         if self.ew is not None:
             weights=self.ew
         else:
             weights = [np.concatenate(self.computedEmbeddings, axis=1)]
             self.ew=weights
-        emb = Embedding(weights[0].shape[0], weights[0].shape[1], weights=weights, trainable=False)(words_input)
-        if "dim_num_embedding" in self.config:
-            emb=concatenate([emb,Embedding(self.num_words,self.config["dim_num_embedding"],trainable=False)(words_input)])
+
+        emb = Embedding(weights[0].shape[0], weights[0].shape[1], weights=weights, trainable=False)
+
+        # if "dim_num_embedding" in self.config:
+        #     emb=concatenate([emb,Embedding(self.num_words,self.config["dim_num_embedding"],trainable=False)
         return emb
 
     def get_data(self,foldNum):
         train = self.folds.indexes[foldNum][0]
         val = self.folds.indexes[foldNum][1]
         train_ = self.train_words[train]
-        train_chars_ = self.train_chars[train]
+        train_chars_ = self.train_words1[train]
         train_len=self.meta[train]
         train_ = [train_, train_chars_,train_len]
         pred_train = self.train_dataset.predictions()[train]
         pred_val = self.train_dataset.predictions()[val]
-        val_ = [self.train_words[val], self.train_chars[val], self.meta[val]]
+        val_ = [self.train_words[val], self.train_words1[val], self.meta[val]]
         return pred_train, pred_val, train_, val_
 
     def get_test(self):
-        return [self.test_words, self.test_chars]
+        return [self.test_words, self.test_words1]
 
     def get_holdout(self):
         indexes = self.holdout_split[1]
 
         words = self.train_words[indexes]
-        chars = self.train_chars[indexes]
+        chars = self.train_words1[indexes]
         combined = [words, chars, self.meta[indexes]]
         predictions = self.train_dataset.predictions()[indexes]
 

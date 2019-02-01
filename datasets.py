@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold,KFold,train_test_split
-
+import preprocessing
 
 
 class SimpleCsvDataSet:
@@ -9,6 +9,7 @@ class SimpleCsvDataSet:
         if isinstance(dataframe,str):
             dataframe=pd.read_csv(dataframe)
         self.text=dataframe[textColumn].values
+        self.text=[preprocessing.preprocess(x) for x in self.text]
         self.target = dataframe[targetColumn].values
 
     def __getitem__(self, item):
