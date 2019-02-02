@@ -29,6 +29,8 @@ class ClassificationWorkspace:
         self.ew=None
         self.meta=None
         self.holdout_split=None
+        self.folds_to_calculate=self.fold_count
+        if "folds_to_calculate" in config: self.folds_to_calculate = config["folds_to_calculate"]
 
 
     def prepare(self,train_dataset,test_dataset):

@@ -60,6 +60,11 @@ def build_network(word_embeddings,  characters, cfg):
     else: return main_branch
 
 def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
+    """
+
+    :param workspace:
+    :return: tuple of model and a dictionary from branch name to branch layers dict
+    """
     mdl=workspace.config["model"]
 
     words = Input(shape=(workspace.max_words_seq_length,))
@@ -79,30 +84,68 @@ def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
     else:
         all_emb = Dropout(wordsDropout)(word_embeddings)
 
-    inputs={"words":all_emb,"chars":chars_embedding}
-    branches=[create_branch(branch,mdl["branches"][branch], inputs) for branch in mdl["branches"]]
+    inputs={"words":all_emb,"chars":chars_embedding, "len_input": len_input, "wordNumbers": words}
+    inputsList = [words, chars, len_input]
+
+    branches = []
+    branchToLayers = {}
+    # branches=[create_branch(branch,mdl["branches"][branch], inputs) for branch in mdl["branches"]]
+    for branchName in mdl["branches"]:
+        branchTensor = create_branch(branchName,mdl["branches"][branchName], inputs, workspace.config)
+        branches.append(branchTensor)
+        lastLayer = getTensorInputLayer(branchTensor)
+        allLayers = {}
+        collectLayers(lastLayer, allLayers)
+        branchToLayers[branchName] = allLayers
+
     if "has_len" in mdl and mdl["has_len"]:
         branches.append(len_input)
     if len(branches)>1:
         main=concatenate(branches)
     else:
         main=branches[0]
-    out = Dense(1, activation="sigmoid")(main)
-    m = keras.models.Model([words, chars,len_input], out)
+    out = Dense(1, activation="sigmoid", name="BranchJoiningDense")(main)
+    m = keras.models.Model(inputsList, out)
     m.compile(loss=workspace.config["loss"], optimizer=workspace.config["optimizer"], metrics=workspace.config["metrics"])
-    return m
+    return (m, branchToLayers)
 
 
 import blocks
 import copy
-def create_branch(branch,cfg,inputs):
-    cfg=copy.copy(cfg)
+def create_branch(branch,branchConfig,inputs, globalConfig):
+    cfg=copy.copy(branchConfig)
     func=getattr(blocks,cfg["type"])
     input=inputs[cfg["input"]]
-    del cfg["input"]
-    del cfg["type"]
-    return func(input,**cfg)
 
+    requiredParams = func.__code__.co_varnames
+
+    maskedBranchParamNames = ["input", "type", "saveWeights", "loadWeights", "freeze"]
+    for maskedParamName in maskedBranchParamNames:
+        if maskedParamName in cfg: del cfg[maskedParamName]
+
+    if "inputType" in requiredParams: cfg["inputType"] = branchConfig["input"]
+
+    # copying those of function parameters that cant be found in branhc scope,
+    # but can be found in global config
+    for requiredParamName in requiredParams:
+        if requiredParamName not in cfg and requiredParamName in globalConfig:
+            cfg[requiredParamName] = globalConfig[requiredParamName]
+
+    branch = func(input,**cfg)
+
+    return branch
+
+def getTensorInputLayer(tensor):
+    return tensor._keras_history[0]
+
+def collectLayers(layer:keras.layers.Layer, result:dict):
+    if layer.name in result:
+        return
+    else:
+        result[layer.name] = layer
+        for inboundNode in layer._inbound_nodes:
+            for inboundLayer in inboundNode.inbound_layers:
+                collectLayers(inboundLayer, result)
 
 def create_model(cfg,workspace:workspace.ClassificationWorkspace):
     words = Input(shape=(workspace.max_words_seq_length,))

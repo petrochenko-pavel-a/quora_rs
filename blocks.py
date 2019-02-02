@@ -1,4 +1,5 @@
 from keras.layers import *
+import keras as keras
 import layers
 
 def global_features_network(input, dropout, output_channels,mode="ave"):
@@ -91,4 +92,38 @@ def residual_gru_with_attention(input,channels,last_layer_channels, dropout, out
     m = layers.AttLayer()(m)
     m = Dropout(dropout)(m)
     m = Dense(output_channels, activation="relu")(m)
+    return m
+
+def fullSeqDense(input, inputType, num_words, embedding_vector_length = 200, dropout = 0.0,
+                 dropout2 = 0.0, activation="relu", third_layer = False,
+                 embedding_regularizer=0.0,
+                 dense_regularizer=0.0,
+                 output_channels = 64):
+    m = None
+    if inputType == "wordNumbers":
+        embRegularizer = None
+        if embedding_regularizer > 0: embRegularizer=keras.regularizers.l2(embedding_regularizer)
+
+        m = Embedding(input_dim=num_words, output_dim=embedding_vector_length,
+                      trainable=True, embeddings_regularizer=embRegularizer,
+                      name="EmbeddingDense")(input)
+
+        if dropout > 0: m = Dropout(dropout)(m)
+    elif inputType == "words":
+        m = input
+
+    m = Flatten()(m)
+
+    denseRegularizer = None
+    if dense_regularizer > 0: denseRegularizer = keras.regularizers.l2(dense_regularizer)
+
+    if third_layer:
+        m = Dense(int((embedding_vector_length + output_channels)/2),
+                  activation=activation, kernel_regularizer=denseRegularizer, name="SecondDense")(m)
+
+        if dropout2 > 0: m = Dropout(dropout2)(m)
+
+    m = Dense(output_channels, kernel_regularizer=denseRegularizer, activation=activation,
+              name="ThirdDense")(m)
+
     return m
