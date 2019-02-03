@@ -1,0 +1,54 @@
+#char and word vocabularies
+num_words: 300000
+num_chars: 200
+
+#char and word max sequence meta
+max_words_seq: 50
+max_chars_seq: 150
+
+
+#List of word embeddings that should be used
+embeddings:
+  - glove.840B.300d.txt
+  - wiki-news-300d-1M.vec
+  - paragram_300_sl999.txt
+  - GoogleNews-vectors-negative300.bin
+  - name: custom.vect
+    size: 150
+    window: 4
+    min_count: 2
+
+#dimension of character embedding
+dim_char_embedding: 100
+
+###seeds folds and hold out
+holdout: 0.2
+holdout_seed: 211
+folds: 5
+folds_seed: 33
+stratify_folds: true
+folds_to_calculate: 2
+#pca: 600
+
+model:
+  words_dropout: 0.3
+  words_dropout_kind: spatial
+  branches:
+    convpool:
+      type: inception
+      input: words
+      depth: 3
+      pool: 2x
+      cardinality: 1
+      bottleneck: true
+      channels: 64
+      inner_channels: 64
+      output_channels: 64
+      mode: "3only"
+      inner_mode: "3only"
+
+optimizer: adam
+metrics: ['accuracy']
+loss: binary_crossentropy
+epochs: 9
+batch: 512
