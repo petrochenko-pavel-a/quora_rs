@@ -5,6 +5,7 @@ from custom_vect import *
 from datasets import *
 from  utils import *
 from keras.layers import Embedding,concatenate
+from sklearn.decomposition import PCA
 
 class ClassificationWorkspace:
 
@@ -31,6 +32,8 @@ class ClassificationWorkspace:
         self.holdout_split=None
         self.folds_to_calculate=self.fold_count
         if "folds_to_calculate" in config: self.folds_to_calculate = config["folds_to_calculate"]
+        self.pca_components = None
+        if "pca" in config: self.pca_components = config["pca"]
 
 
     def prepare(self,train_dataset,test_dataset):
@@ -85,6 +88,12 @@ class ClassificationWorkspace:
             weights=self.ew
         else:
             weights = [np.concatenate(self.computedEmbeddings, axis=1)]
+            if self.pca_components is not None:
+                print("Evaluating PCA...")
+                pca = PCA(n_components=self.pca_components)
+                principalComponents = pca.fit_transform(weights[0])
+                weights = [principalComponents]
+                print("Finished evaluating PCA.")
             self.ew=weights
         emb = Embedding(weights[0].shape[0], weights[0].shape[1], weights=weights, trainable=False)(words_input)
         if "dim_num_embedding" in self.config:

@@ -107,6 +107,7 @@ def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
     out = Dense(1, activation="sigmoid", name="BranchJoiningDense")(main)
     m = keras.models.Model(inputsList, out)
     m.compile(loss=workspace.config["loss"], optimizer=workspace.config["optimizer"], metrics=workspace.config["metrics"])
+    print(m.summary())
     return (m, branchToLayers)
 
 
@@ -119,7 +120,7 @@ def create_branch(branch,branchConfig,inputs, globalConfig):
 
     requiredParams = func.__code__.co_varnames
 
-    maskedBranchParamNames = ["input", "type", "saveWeights", "loadWeights", "freeze"]
+    maskedBranchParamNames = ["input", "type", "saveWeights", "loadWeights", "freeze", "freezeEmbedding"]
     for maskedParamName in maskedBranchParamNames:
         if maskedParamName in cfg: del cfg[maskedParamName]
 

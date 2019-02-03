@@ -7,6 +7,7 @@ import pandas as pd
 import os
 import yaml
 import argparse
+import time
 
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
@@ -67,19 +68,23 @@ class BranchController:
                     self.unfreezeBranch(branchName)
 
     def freezeBranch(self, branchName):
+        branchConfig = self.workspaceConfig["branches"][branchName]
+
         branchDictionary = self.branchesToLayers[branchName]
         if branchDictionary is not None:
             for layerName in branchDictionary:
                 layer = branchDictionary[layerName]
-                if not self.ignoreEmbeddings(branchName) or not isinstance(layer, keras.layers.Embedding):
+                if not isinstance(layer, keras.layers.Embedding) or ("freezeEmbedding" in branchConfig and branchConfig["freezeEmbedding"]):
                     layer.trainable = False
 
     def unfreezeBranch(self, branchName):
+        branchConfig = self.workspaceConfig["branches"][branchName]
+
         branchDictionary = self.branchesToLayers[branchName]
         if branchDictionary is not None:
             for layerName in branchDictionary:
                 layer = branchDictionary[layerName]
-                if not self.ignoreEmbeddings(branchName) or not isinstance(layer, keras.layers.Embedding):
+                if not isinstance(layer, keras.layers.Embedding) or ("freezeEmbedding" in branchConfig and branchConfig["freezeEmbedding"]):
                     layer.trainable = True
 
     def branchFileName(self, branchName):
@@ -217,6 +222,8 @@ class UpgModelCheckpoint(keras.callbacks.Callback):
 
 
 def evalModel(workspace:ClassificationWorkspace,gpu):
+    modelStartTime = time.time()
+
     best_tresholds = []
     best_scores = []
 
@@ -231,6 +238,8 @@ def evalModel(workspace:ClassificationWorkspace,gpu):
     pred_holdout,holdout_data=workspace.get_holdout()
     folds_to_calculate = workspace.fold_count
     if workspace.folds_to_calculate: folds_to_calculate = workspace.folds_to_calculate
+
+    perEpochTime = 0.0
     for foldNum in range(folds_to_calculate):
 
         with K.tf.device('/gpu:'+str(gpu)):
@@ -253,8 +262,11 @@ def evalModel(workspace:ClassificationWorkspace,gpu):
                                           branchController = branchController)
             branchController.loadWeights()
 
+            fitStartTime = time.time()
             m.fit(train_, pred_train, workspace.config["batch"], workspace.config["epochs"], validation_data=(val_,pred_val), shuffle=True,
                   callbacks=[checkpoint], verbose=1)
+            fitEndTime = time.time()
+            perEpochTime += (fitEndTime - fitStartTime)/(folds_to_calculate*workspace.config["epochs"])
             m.save_weights(weights_folder+"/fold_last_" + str(foldNum)+".weights")
             pred_last = m.predict(val_,batch_size=workspace.config["batch"])
 
@@ -317,6 +329,10 @@ def evalModel(workspace:ClassificationWorkspace,gpu):
     blendAver=eval_f1_score(blend_preds,pred_holdout,np.mean(np.array(combined_tresh))*0.93)
     print("Evaluating all folds blend:",holdout_tresh[0],holdout_tresh[1],holdout_tresh_blend[0],holdout_tresh_blend[1],"Av Blend:",blendAver)
 
+    modelEndTime = time.time()
+    modelTotalTime = modelEndTime - modelStartTime
+    perFoldTime = modelTotalTime / folds_to_calculate
+
     metrics = {
         "holdout_blend_treshold": float(holdout_tresh[0]),
         "holdout_blend_score": float(holdout_tresh[1]),
@@ -329,6 +345,9 @@ def evalModel(workspace:ClassificationWorkspace,gpu):
         "holdout_super_blend_treshold": float(holdout_tresh_blend[0]),
         "holdout_super_blend_score": float(holdout_tresh_blend[1]),
         "Blend with averaged tresh:": float(blendAver),
+        "Total work time:": modelTotalTime,
+        "Time per fold:": perFoldTime,
+        "Time per epoch:": perEpochTime
     }
     with open(dir+"/metrics_final" + ".yaml", "w", encoding="utf8") as f:
         yaml.dump(metrics, f,default_flow_style=False)
@@ -374,6 +393,7 @@ def main():
     if os.path.isdir(args.input):
         for v in os.listdir(args.input):
             ps=args.input + "/" + v + "/config.yaml";
+            print("Handling " + ps)
             if os.path.exists(ps):
                 evalModel(load_config(ps, args.data, args.quora + "/"), args.gpu)
         exit(0)
