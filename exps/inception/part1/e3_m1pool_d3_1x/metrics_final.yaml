@@ -1,12 +1,12 @@
-'Blend with averaged tresh:': 0.6715165081141578
-'Time per epoch:': 63.91039168834686
-'Time per fold:': 265.48320484161377
-'Total work time:': 530.9664096832275
-best_score_average: 0.6597375533755496
-best_treshold_average: 0.31
-holdout_blend_score: 0.6692668588547849
-holdout_blend_treshold: 0.31
-holdout_super_blend_score: 0.6715672198931832
-holdout_super_blend_treshold: 0.36
-snapshot_score_average: 0.6631030296124587
-snapshot_treshold_average: 0.36
+'Blend with averaged tresh:': 0.6723717767072825
+'Time per epoch:': 64.25315543015797
+'Time per fold:': 247.65638935565948
+'Total work time:': 495.31277871131897
+best_score_average: 0.6610184164943365
+best_treshold_average: 0.36
+holdout_blend_score: 0.6702834053855501
+holdout_blend_treshold: 0.35
+holdout_super_blend_score: 0.6727729270102152
+holdout_super_blend_treshold: 0.37
+snapshot_score_average: 0.6625509610432079
+snapshot_treshold_average: 0.39

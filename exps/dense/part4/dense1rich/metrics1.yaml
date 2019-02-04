@@ -1,0 +1,9 @@
+fold: 1
+score_best: 0.7007998820450441
+score_holdout: 0.6897429960639037
+score_last: 0.7007998820450441
+score_snaphot: 0.7007998820450441
+treshold_best: 0.42
+treshold_holdout: 0.4
+treshold_last: 0.42
+treshold_snaphot: 0.42

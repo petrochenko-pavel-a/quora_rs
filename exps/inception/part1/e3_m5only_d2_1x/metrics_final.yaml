@@ -1,0 +1,12 @@
+'Blend with averaged tresh:': 0.6657883672039243
+'Time per epoch:': 37.038955330848694
+'Time per fold:': 160.02117538452148
+'Total work time:': 320.04235076904297
+best_score_average: 0.6582280023998812
+best_treshold_average: 0.37
+holdout_blend_score: 0.6662293585831218
+holdout_blend_treshold: 0.36
+holdout_super_blend_score: 0.6662293585831218
+holdout_super_blend_treshold: 0.36
+snapshot_score_average: 0.6582280023998812
+snapshot_treshold_average: 0.37

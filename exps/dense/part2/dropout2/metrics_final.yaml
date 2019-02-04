@@ -1,0 +1,9 @@
+'Blend with averaged tresh:': 0.6165246003575409
+best_score_average: 0.6268193488004284
+best_treshold_average: 0.305
+holdout_blend_score: 0.6321878579610538
+holdout_blend_treshold: 0.32
+holdout_super_blend_score: 0.6214358165220332
+holdout_super_blend_treshold: 0.27
+snapshot_score_average: 0.6149848567332132
+snapshot_treshold_average: 0.22
