@@ -218,7 +218,7 @@ class Vocabulary:
     def __init__(self,d,name=""):
         fn="vocabulary_" + name + ".dat"
         self._items = None
-        if os.path.exists(fn):
+        if os.path.exists(fn) :
             self.vocab=load(fn)
             return
 
@@ -235,8 +235,8 @@ class Vocabulary:
         save(fn,self.vocab)
 
     def items(self):
-        if self._items is None:
-            self._items=sorted(list(self.vocab.items()),key=operator.itemgetter(1),reverse=True)
+        #if self._items is None:
+        self._items=sorted(list(self.vocab.items()),key=operator.itemgetter(1),reverse=True)
         return self._items
 
 

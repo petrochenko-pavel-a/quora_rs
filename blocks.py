@@ -119,21 +119,29 @@ class CropWindow(Wrapper):
         layer._num_constants = num_constants
         return layer
 
+def gru(input,channels):
+    m = CuDNNGRU(channels, return_sequences=False)(input)
+    return m
+
+def lstm(input,channels):
+    m = CuDNNLSTM(channels, return_sequences=False)(input)
+    return m
 
 def residual_gru_with_attention(input,channels,last_layer_channels, dropout, output_channels,mode="atention"):
+    #input=AveragePooling1D(2)(input)
     m = CuDNNGRU(channels, return_sequences=True)(input)
-    m = layers.attention_3d_block(m)
+    # m = layers.attention_3d_block(m)
     # m1 = CuDNNGRU(channels, return_sequences=True)(m)
     # m =  add([m, m1])
-    m = CuDNNGRU(last_layer_channels, return_sequences=False)(m)
+    m = CuDNNGRU(last_layer_channels, return_sequences=True)(m)
 
     # if mode=="atention":
-    #     m = layers.AttLayer()(m)
+    m = layers.AttLayer()(m)
     # else:
     #     if mode =="max":
-    #         m=layers.MaxPool1D(m)
+    #m=layers.GlobalMaxPool1D()(m)
     #     else: m=layers.AveragePooling1D(m)
 
     m = Dropout(dropout)(m)
-    m = Dense(output_channels, activation="relu")(m)
+    #m = Dense(output_channels, activation="relu")(m)
     return m

@@ -65,8 +65,8 @@ def cast_l(x):
 def cast_shape(input_shape):
 
         return input_shape
-
-def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
+from keras.optimizers import Adam
+def create_model_from_yaml(workspace:workspace.ClassificationWorkspace,num,iter):
     mdl=workspace.config["model"]
 
     words = Input(shape=(workspace.max_words_seq_length,))
@@ -75,7 +75,7 @@ def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
 
     len_input = Input(shape=(1,))
 
-    word_embeddings = workspace.create_keras_word_embedings_layer()
+    word_embeddings = workspace.create_keras_word_embedings_layer(num,iter)
     #chars_embedding = Embedding(workspace.num_chars, workspace.config["dim_char_embedding"], trainable=False)(chars)
 
     wordsDropout=mdl["words_dropout"]
@@ -83,6 +83,8 @@ def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
     w1=word_embeddings(words)
     w2 = word_embeddings(chars)
 
+    w1=GaussianNoise(0.07)(w1)
+    w2 = GaussianNoise(0.07)(w2)
     #w1=Lambda(cast_l,cast_shape)(w1)
     #w2 = Lambda(cast_l, cast_shape)(w2)
     if dropoutSpatial:
@@ -103,7 +105,7 @@ def create_model_from_yaml(workspace:workspace.ClassificationWorkspace):
         main=branches[0]
     out = Dense(1, activation="sigmoid")(main)
     m = keras.models.Model([words, chars,len_input], out)
-    m.compile(loss=workspace.config["loss"], optimizer=workspace.config["optimizer"], metrics=workspace.config["metrics"])
+    m.compile(loss=workspace.config["loss"], optimizer=Adam(lr=0.001), metrics=workspace.config["metrics"])
     return m
 
 
