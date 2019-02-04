@@ -1,10 +1,10 @@
 #char and word vocabularies
-num_words: 300000
-num_chars: 200
+num_words: 120000
+num_chars: 2
 
 #char and word max sequence meta
-max_words_seq: 50
-max_chars_seq: 150
+max_words_seq: 30
+max_chars_seq: 12
 
 
 #List of word embeddings that should be used
@@ -12,11 +12,11 @@ embeddings:
   - glove.840B.300d.txt
   - wiki-news-300d-1M.vec
   - paragram_300_sl999.txt
-#  - GoogleNews-vectors-negative300.bin
-#  - name: custom.vect
-#    size: 150
-#    window: 4
-#    min_count: 2
+  - GoogleNews-vectors-negative300.bin
+  - name: custom.vect
+    size: 140
+    window: 4
+    min_count: 2
 
 #dimension of character embedding
 dim_char_embedding: 100
@@ -29,33 +29,26 @@ folds_seed: 33
 stratify_folds: true
 
 model:
-  words_dropout: 0.3
+  words_dropout: 0.2
   words_dropout_kind: spatial
   branches:
-
-     gf:
-        type: global_features_network
-        input: words
-        dropout: 0.0
-        output_channels: 64
-        mode: both
      gru:
         type: residual_gru_with_attention
         input: words
-        channels: 64
-        last_layer_channels: 32
-        output_channels: 16
+        channels: 100
+        last_layer_channels: 50
+        output_channels: 50
         dropout: 0.1
      gru1:
-        type: residual_gru_with_attention
-        input: chars
-        channels: 64
-        last_layer_channels: 32
-        output_channels: 16
-        dropout: 0.1
+       type: residual_gru_with_attention
+       input: chars
+       channels: 100
+       last_layer_channels: 50
+       output_channels: 50
+       dropout: 0.1
 
 optimizer: adam
 metrics: ['accuracy']
 loss: binary_crossentropy
-epochs: 6
+epochs: 5
 batch: 1024

@@ -1,10 +1,10 @@
 #char and word vocabularies
-num_words: 150000
-num_chars: 200
+num_words: 200000
+num_chars: 2
 
 #char and word max sequence meta
-max_words_seq: 40
-max_chars_seq: 150
+max_words_seq: 70
+max_chars_seq: 12
 
 
 #List of word embeddings that should be used
@@ -14,7 +14,7 @@ embeddings:
   - paragram_300_sl999.txt
   - GoogleNews-vectors-negative300.bin
   - name: custom.vect
-    size: 150
+    size: 140
     window: 4
     min_count: 2
 
@@ -32,30 +32,23 @@ model:
   words_dropout: 0.2
   words_dropout_kind: spatial
   branches:
-
-#     gf:
-#        type: global_features_network
-#        input: words
-#        dropout: 0.0
-#        output_channels: 64
-#        mode: both
      gru:
         type: residual_gru_with_attention
         input: words
         channels: 100
         last_layer_channels: 50
-        output_channels: 50
+        output_channels: 20
         dropout: 0.1
      gru1:
        type: residual_gru_with_attention
        input: chars
        channels: 100
        last_layer_channels: 50
-       output_channels: 50
+       output_channels: 20
        dropout: 0.1
 
 optimizer: adam
 metrics: ['accuracy']
 loss: binary_crossentropy
-epochs: 5
-batch: 1024
+epochs: 10
+batch: 512

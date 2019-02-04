@@ -13,10 +13,10 @@ embeddings:
   - wiki-news-300d-1M.vec
   - paragram_300_sl999.txt
   - GoogleNews-vectors-negative300.bin
-  - name: custom.vect
-    size: 150
-    window: 4
-    min_count: 2
+#  - name: custom.vect
+#    size: 150
+#    window: 4
+#    min_count: 2
 
 #dimension of character embedding
 dim_char_embedding: 100

@@ -1,5 +1,5 @@
 #char and word vocabularies
-num_words: 300000
+num_words: 120000
 num_chars: 200
 
 #char and word max sequence meta
@@ -24,7 +24,7 @@ dim_char_embedding: 100
 ###seeds folds and hold out
 holdout: 0.2
 holdout_seed: 211
-folds: 5
+folds: 6
 folds_seed: 33
 stratify_folds: true
 
@@ -63,5 +63,5 @@ model:
 optimizer: adam
 metrics: ['accuracy']
 loss: binary_crossentropy
-epochs: 6
+epochs: 3
 batch: 1024
